@@ -20,7 +20,7 @@ def parse_json(data):
     return json.loads(json_util.dumps(data))
 
 @app.route("/")
-def test():
+def home():
     print(list(notes_collection.find()))
 
     data = list(notes_collection.find())
@@ -45,8 +45,10 @@ def addNotes():
 
 @app.route("/api/notes")
 def getNotes():
+    notes = list(notes_collection.find({},{"_id":0}))
+    # remove ObjectId data type to the colelction
     if len(notes) ==0:
-        return "Notes does not exists"
+        return "No stored notes"
     return json.dumps(notes)
 
 @app.route("/api/delete", methods=["DELETE"])
@@ -54,7 +56,11 @@ def deleteNote():
     data = request.get_json()
     delete_query = {"title":data['title']}
     res = notes_collection.delete_one(delete_query)
-    # filtered = filter(lambda note: data['title'] in note['title'],notes)
     return f"{res.deleted_count} deleted!"
+
+
+@app.route("/api/cve")
+def cve():
+    # todo cve scrapper
 
 app.run(host='0.0.0.0',port=8080)
