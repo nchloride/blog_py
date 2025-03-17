@@ -1,0 +1,28 @@
+<html>
+	<head>
+		<style>
+			h1{
+				color:black;
+				font-weight:bold
+			}
+			h2{
+				color:gray;
+				font-weight:italic
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Notes</h1>
+		{% for note in notes %}
+			<h2>{{note['title']}}</h2>
+			<p>{{note['note']}}</p>
+			{% if note['tags'] is not string  %}
+				{% for tag in note['tags'] %}
+					<p>#{{tag}}</p>
+				{% endfor %}
+			{% else %}
+				<p>{{note['tags']}}</p>
+			{% endif %}
+		{% endfor %}
+	</body>
+</html>
