@@ -3,7 +3,12 @@ from pymongo import MongoClient
 import json
 import os
 import urllib.parse
+from bs4 import  BeautifulSoup
+import requests
 from bson import json_util
+
+
+
 app = Flask(__name__)
 notes=[]
 
@@ -58,9 +63,13 @@ def deleteNote():
     res = notes_collection.delete_one(delete_query)
     return f"{res.deleted_count} deleted!"
 
-
-@app.route("/api/cve")
+@app.route("/cve", methods=["GET"])
 def cve():
-    # todo cve scrapper
+    sites = ["https://thehackernews.com/search/label/Vulnerability"]
+    data = requests.get(sites[0])
+    soup = BeautifulSoup(data.content,"html.parser")
+    cve = soup.find(class_="blog-posts clear")
+    print(cve)
+    return "TEST"
 
 app.run(host='0.0.0.0',port=8080)
