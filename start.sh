@@ -9,6 +9,10 @@ then
 fi
 
 
+sed -e "s/ip = \"<ip_add>\"/ip = \"${ip}\"/g" main.py > main2.py
 
 
+export user=admin
+export pass=pass123
 
+python3 main2.py
