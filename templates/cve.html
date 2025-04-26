@@ -1,0 +1,21 @@
+<html>
+	<head>
+		<style>
+			h1{
+				color:black;
+				font-weight:bold
+			}
+			h2{
+				color:gray;
+				font-weight:italic
+			}
+		</style>
+	</head>
+	<body>
+		<h1>LATEST AND GREATEST</h1>
+		{% for cve in cves %}
+			<h2>{{cve['title']}}</h2>
+			<a href={{cve['link']}}>Read more</a>
+		{% endfor %}
+	</body>
+</html>
