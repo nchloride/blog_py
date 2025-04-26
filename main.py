@@ -7,11 +7,14 @@ from bs4 import  BeautifulSoup
 import requests
 from bson import json_util
 
-
+from utility.cve import cve_request
+ip = "192.168.100.114"
 
 app = Flask(__name__)
 notes=[]
 
+if ip == "<ip_add>":
+    ip = "192.168.100.114"
 
 user = urllib.parse.quote_plus(os.environ['user'])
 password = urllib.parse.quote_plus(os.environ['pass'])
@@ -32,7 +35,7 @@ def home():
     if len(data) != 0:
         return render_template("home.html",notes=data)
     client.close()
-    return "<h1>HELLO THERE</h1>"
+    return "<h1>HELLO THEREE</h1>"
 
 @app.route("/api/add", methods=['POST'])
 def addNotes():
@@ -65,11 +68,14 @@ def deleteNote():
 
 @app.route("/cve", methods=["GET"])
 def cve():
-    sites = ["https://thehackernews.com/search/label/Vulnerability"]
-    data = requests.get(sites[0])
-    soup = BeautifulSoup(data.content,"html.parser")
-    cve = soup.find(class_="blog-posts clear")
-    print(cve)
-    return "TEST"
+    print(cve_request())
+    return render_template("cve.html",cves=cve_request())
+
+@app.route("/util")
+def util():
+    return test()
+
+
+
 
 app.run(host='0.0.0.0',port=8080)
