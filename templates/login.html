@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Note taking app</title>
+    <style>
+	.login{
+		position:absolute;
+		top:20%;
+		left:50%;
+		transform:translate(-50%,-50%);
+
+		display: flex;
+            flex-direction: column; /* Stacks the H2 and Form vertically */
+            align-items: center;    /* Centers items inside the div */
+            text-align: center;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);			
+	}
+
+        body { 
+		margin:0;
+		display:flex;
+		font-family: sans-serif;
+		justify-content: center;
+		align-items: center;
+		margin: 40px;
+		line-height: 1.6; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; }
+        input[type="password"] { padding: 8px; width: 250px; }
+        button { padding: 8px 15px; cursor: pointer; background: #007bff; color: white; border: none; }
+    </style>
+</head>
+<body>
+	<div class="login">
+    		<h2>What's the password?!?.....</h2>
+    			<form action="/api/auth" method="POST">
+        			<div class="form-group">
+            			<input id="password" type="password" name="password" placeholder="Enter the password" required> 
+        			<button type="submit">Submit</button>
+    			</form>
+	</div>
+
+</body>
+</html>

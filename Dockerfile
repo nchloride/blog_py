@@ -16,6 +16,6 @@ ENV pass=pass123
 
 RUN pip install --no-cache-dir flask pymongo requests beautifulsoup4 
 
-EXPOSE 8080
+EXPOSE 80
 
 CMD ["python3","main.py"]

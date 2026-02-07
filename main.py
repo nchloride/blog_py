@@ -8,34 +8,71 @@ import requests
 from bson import json_util
 
 from utility.cve import cve_request
-ip = "192.168.100.114"
+ip = "192.168.100.200"
 
 app = Flask(__name__)
+app.secret_key = "super_secret_key_hahaha"
 notes=[]
 
-if ip == "<ip_add>":
-    ip = "192.168.100.114"
 
 user = urllib.parse.quote_plus(os.environ['user'])
 password = urllib.parse.quote_plus(os.environ['pass'])
 
-mongoUri = f"mongodb://{user}:{password}@192.168.100.114:27017/blog?authSource=admin"
+mongoUri = f"mongodb://{user}:{password}@192.168.100.200:27017/blog?authSource=admin"
 client = MongoClient(mongoUri)
 db = client['blog']
 notes_collection = db.get_collection("notes")
 
+VALID_TOKEN = f"valid_token"
+
+@app.before_request
+def check_auth():
+    token = request.headers.get("Authorization")
+    endpoints_without_auth = ["login","authentication","cve","home"]
+    if 'pass' not in session and request.endpoint not in endpoints_without_auth:
+        return redirect(url_for("login")), 401
+
+
 def parse_json(data):
     return json.loads(json_util.dumps(data))
+
+@app.route("/login")
+def login():
+    if 'pass' in session:
+        return redirect(url_for("home"))
+    return render_template("login.html")
 
 @app.route("/")
 def home():
     print(list(notes_collection.find()))
-
     data = list(notes_collection.find())
     if len(data) != 0:
         return render_template("home.html",notes=data)
-    client.close()
+    
     return "<h1>HELLO THEREE</h1>"
+
+@app.route("/api/logout")
+def logout():
+    session.pop("pass",None)
+    return redirect(url_for("login"))
+
+@app.route("/admin")
+def admin():
+    response = make_response(render_template("admin.html", title="Admin dashboard"))
+    return response
+    
+
+@app.route("/api/auth",methods=["POST"])
+def authentication():
+    if request.method != "POST":
+        return redirect(url_for("home"))
+    password = request.form.get("password")
+    if password != "secret_password":
+        return json.dumps({"message":"try again"})
+    session["pass"] = password
+    res = make_response(redirect(url_for("admin")))
+    return res
+
 
 @app.route("/api/add", methods=['POST'])
 def addNotes():
@@ -78,4 +115,4 @@ def util():
 
 
 
-app.run(host='0.0.0.0',port=8080)
+app.run(host='0.0.0.0',port=80)

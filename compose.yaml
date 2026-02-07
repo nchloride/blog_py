@@ -13,7 +13,7 @@ services:
       context: ./
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "80:80"
     environment: 
       - user=admin
       - pass=pass123
