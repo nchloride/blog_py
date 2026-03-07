@@ -1,0 +1,169 @@
+<div class="compose-box">
+    <div class="avatar"></div>
+    <form id="noteForm" class="compose-content">
+        <input type="text" id="title" placeholder="Title of your note..." required>
+        <textarea id="note" placeholder="What's happening?" required></textarea>
+        <input type="text" id="tags" placeholder="Tags (comma separated)">
+        
+        <div class="compose-footer">
+            <div class="icons-placeholder">
+                <span>🖼️</span><span>📊</span><span>😀</span><span>📍</span>
+            </div>
+            <button type="submit" id="submitBtn">Post</button>
+        </div>
+    </form>
+</div>
+
+<style>
+.compose-container {
+        display: flex;
+        padding: 16px;
+        border-bottom: 1px solid #2f3336;
+        background-color: #000;
+    }
+
+    .avatar-column {
+        margin-right: 12px;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        background-color: #333;
+        border-radius: 50%;
+    }
+
+    .compose-form {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .input-wrapper input, 
+    .input-wrapper textarea {
+        width: 100%;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: #e7e9ea;
+        font-family: inherit;
+    }
+
+    #title {
+        font-size: 15px;
+        color: #71767b;
+        margin-bottom: 8px;
+    }
+
+    #note {
+        font-size: 20px;
+        line-height: 24px;
+        resize: none;
+        min-height: 50px;
+        margin-bottom: 12px;
+    }
+
+    #tags {
+        font-size: 14px;
+        color: #1d9bf0; /* X Blue */
+        margin-bottom: 12px;
+    }
+
+    .compose-divider {
+        height: 1px;
+        background-color: #2f3336;
+        margin-bottom: 12px;
+    }
+
+    .compose-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .toolbar-icons {
+        display: flex;
+        gap: 4px;
+    }
+
+    .toolbar-icons button {
+        background: none;
+        border: none;
+        padding: 8px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.2s;
+    }
+
+    .toolbar-icons button:hover {
+        background-color: rgba(29, 155, 240, 0.1);
+    }
+
+    .x-post-btn {
+        background-color: #1d9bf0;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 9999px;
+        font-weight: 700;
+        font-size: 15px;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .x-post-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+
+    .x-post-btn:not(:disabled):hover {
+        background-color: #1a8cd8;
+    }    
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const noteForm = document.getElementById('noteForm');
+
+    // Check if the form actually exists to avoid the null error
+    if (noteForm) {
+        noteForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Posting...";
+
+            const rawTags = document.getElementById('tags').value;
+            const data = {
+                title: document.getElementById('title').value,
+                note: document.getElementById('note').value,
+                tags: rawTags ? rawTags.split(',').map(t => t.trim()) : []
+            };
+
+            try {
+                const response = await fetch('/api/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json(); // Switch to .json() if your API returns JSON
+
+                if (result === "already exist") {
+                    alert("Error: A note with this title already exists.");
+                } else {
+                    alert("Note added, redirect to the homepage");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert("Failed to post note.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Post";
+            }
+        });
+    }
+});
+</script>

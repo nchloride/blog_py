@@ -41,13 +41,16 @@ def login():
     if 'pass' in session:
         return redirect(url_for("home"))
     return render_template("login.html")
+@app.route("/add")
+def post_form():
+    return render_template("add_note_form.html")
 
 @app.route("/")
 def home():
     print(list(notes_collection.find()))
     data = list(notes_collection.find())
     if len(data) != 0:
-        return render_template("home.html",notes=data)
+        return render_template("new_home.html",notes=data)
     
     return "<h1>HELLO THEREE</h1>"
 
@@ -73,6 +76,9 @@ def authentication():
     res = make_response(redirect(url_for("admin")))
     return res
 
+@app.route("/api/cve")
+def cve_api():
+    return json.dumps(cve_request())
 
 @app.route("/api/add", methods=['POST'])
 def addNotes():
@@ -105,6 +111,9 @@ def deleteNote():
 
 @app.route("/cve", methods=["GET"])
 def cve():
+    isApi = request.args.get("api")
+    if isApi != None:
+        ZZ
     print(cve_request())
     return render_template("cve.html",cves=cve_request())
 
