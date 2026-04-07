@@ -1,0 +1,358 @@
+
+<style>
+  #controls { display:flex; gap:8px; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap; }
+  #ap-input { flex:1; min-width:200px; height:80px; font-size:12px; font-family:var(--font-mono); padding:8px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-secondary); background:var(--color-background-secondary); color:var(--color-text-primary); resize:vertical; }
+  #ap-input:focus { outline:none; border-color:var(--color-border-primary); }
+  #render-btn { padding:8px 16px; font-size:13px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-secondary); background:transparent; color:var(--color-text-primary); cursor:pointer; white-space:nowrap; }
+  #render-btn:hover { background:var(--color-background-secondary); }
+  #error-msg { font-size:12px; color:var(--color-text-danger); margin-bottom:8px; min-height:16px; }
+  #graph-outer { position:relative; width:100%; height:calc(100vh - 160px); }
+  #graph-wrap { width:100%; height:100%; overflow:hidden; }
+  #zoom-btns {
+    position:absolute; top:10px; right:10px; z-index:10;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  #zoom-btns button {
+    width:30px; height:30px; font-size:16px; line-height:1;
+    border-radius:6px; border:0.5px solid var(--color-border-secondary);
+    background:var(--color-background-secondary); color:var(--color-text-primary);
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    opacity:0.85;
+  }
+  #zoom-btns button:hover { opacity:1; border-color:var(--color-border-primary); }
+  .node-group { cursor:grab; }
+  .node-group:active { cursor:grabbing; }
+  .radio-dismiss, .radio-confirm { cursor:pointer; }
+  .radio-dismiss:hover .radio-ring { stroke-width:2.5; }
+  .radio-confirm:hover .radio-ring { stroke-width:2.5; }
+</style>
+
+<div id="controls">
+  <textarea id="ap-input" spellcheck="false"></textarea>
+  <button id="render-btn">Render graph</button>
+</div>
+<div id="error-msg"></div>
+<div id="graph-outer">
+  <div id="zoom-btns">
+    <button id="zoom-in"  title="Zoom in">+</button>
+    <button id="zoom-out" title="Zoom out">−</button>
+    <button id="zoom-reset" title="Reset zoom" style="font-size:12px;">⊙</button>
+  </div>
+  <div id="graph-wrap"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+const DEFAULT = {{ doc.paths | tojson }};
+
+document.getElementById('ap-input').value = JSON.stringify(DEFAULT, null, 2);
+
+const PALETTE = [
+  {fill:"#EEEDFE", stroke:"#7F77DD", text:"#3C3489", strikeStroke:"#7F77DD"},
+  {fill:"#E1F5EE", stroke:"#1D9E75", text:"#085041", strikeStroke:"#1D9E75"},
+  {fill:"#FAECE7", stroke:"#D85A30", text:"#712B13", strikeStroke:"#D85A30"},
+  {fill:"#E6F1FB", stroke:"#378ADD", text:"#0C447C", strikeStroke:"#378ADD"},
+  {fill:"#FAEEDA", stroke:"#BA7517", text:"#633806", strikeStroke:"#BA7517"},
+  {fill:"#FBEAF0", stroke:"#D4537E", text:"#72243E", strikeStroke:"#D4537E"},
+];
+
+const NODE_H = 38, NODE_PAD = 20, RADIO_R = 6, RADIO_INNER_R = 3.5, RADIO_GAP = 20, LEVEL_GAP = 90, MIN_SIBLING_GAP = 20;
+const RADIO_AREA = RADIO_R * 4 + RADIO_GAP + 10; // space reserved on right for two radio circles
+
+function charW(s) { return Math.max(100, s.length * 7.5 + NODE_PAD * 2 + RADIO_AREA); }
+
+function buildTree(data) {
+  let id = 0;
+  function walk(node, depth) {
+    const n = { id: id++, label: node.name, depth, children: [], subtreeW: 0, x: 0, y: 0, w: 0, state: 'normal' };
+    n.children = (node.paths || []).map(c => walk(c, depth + 1));
+    n.w = charW(n.label);
+    n.subtreeW = n.children.length
+      ? n.children.reduce((s, c) => s + c.subtreeW, 0) + (n.children.length - 1) * MIN_SIBLING_GAP
+      : n.w;
+    n.subtreeW = Math.max(n.subtreeW, n.w);
+    return n;
+  }
+  const roots = data.map(d => walk(d, 1));
+  const rootSubtreeW = roots.reduce((s, r) => s + r.subtreeW, 0) + (roots.length - 1) * MIN_SIBLING_GAP;
+  const root = { id: id++, label: "target system", depth: 0, children: roots, x: 0, y: 0, w: charW("target system"), state: 'normal' };
+  root.subtreeW = Math.max(charW("target system"), rootSubtreeW);
+  return root;
+}
+
+function assignPositions(node, xCenter, yTop) {
+  node.x = xCenter; node.y = yTop;
+  if (!node.children.length) return;
+  const totalW = node.children.reduce((s, c) => s + c.subtreeW, 0) + (node.children.length - 1) * MIN_SIBLING_GAP;
+  let cursor = xCenter - totalW / 2;
+  for (const child of node.children) {
+    assignPositions(child, cursor + child.subtreeW / 2, yTop + NODE_H + LEVEL_GAP);
+    cursor += child.subtreeW + MIN_SIBLING_GAP;
+  }
+}
+
+function flatten(node, nodes = [], links = []) {
+  nodes.push(node);
+  for (const child of node.children) {
+    links.push({ source: node, target: child });
+    flatten(child, nodes, links);
+  }
+  return { nodes, links };
+}
+
+let svgEl, nodesData, linksData, nodeGroups, linkPaths, svgW, svgH, zoomBehavior;
+
+function linkPath(s, t) {
+  const x1 = s.x, y1 = s.y + NODE_H;
+  const x2 = t.x, y2 = t.y - 2;
+  const my = (y1 + y2) / 2;
+  return `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+}
+
+function updateLinks() {
+  linkPaths.attr('d', d => linkPath(d.source, d.target));
+}
+
+function render(attackPath) {
+  document.getElementById('graph-wrap').innerHTML = '';
+
+  const root = buildTree(attackPath);
+  const PADDING = 60;
+  assignPositions(root, root.subtreeW / 2 + PADDING, PADDING);
+
+  const { nodes, links } = flatten(root);
+  nodesData = nodes;
+  linksData = links;
+
+  const xs = nodes.map(n => n.x);
+  const minX = Math.min(...nodes.map(n => n.x - n.w / 2)) - PADDING;
+  const maxX = Math.max(...nodes.map(n => n.x + n.w / 2)) + PADDING;
+  svgW = Math.max(680, maxX - minX + PADDING * 2);
+  svgH = Math.max(...nodes.map(n => n.y)) + NODE_H + PADDING + 40;
+
+  const offsetX = -minX;
+  nodes.forEach(n => { n.x += offsetX; });
+
+  svgEl = d3.select('#graph-wrap').append('svg')
+    .attr('width', '100%')
+    .attr('height', '100%')
+    .style('font-family', 'var(--font-sans)');
+
+  svgEl.append('defs').append('marker')
+    .attr('id','arr').attr('viewBox','0 0 10 10')
+    .attr('refX',8).attr('refY',5)
+    .attr('markerWidth',6).attr('markerHeight',6)
+    .attr('orient','auto-start-reverse')
+    .append('path').attr('d','M2 1L8 5L2 9')
+    .attr('fill','none').attr('stroke','#888')
+    .attr('stroke-width',1.5)
+    .attr('stroke-linecap','round').attr('stroke-linejoin','round');
+
+  // Container that zoom transforms are applied to
+  const zoomContainer = svgEl.append('g').attr('class','zoom-container');
+
+  zoomBehavior = d3.zoom()
+    .scaleExtent([0.15, 4])
+    .filter(event => {
+      // Let scroll always zoom; block pan-start on node elements so drag still works
+      if (event.type === 'mousedown') return !event.target.closest('.node-group');
+      return !event.ctrlKey && !event.button;
+    })
+    .on('zoom', event => zoomContainer.attr('transform', event.transform));
+
+  svgEl.call(zoomBehavior);
+
+  // Fit the full tree into the viewport on first render
+  const wrapEl = document.getElementById('graph-wrap');
+  const vw = wrapEl.clientWidth || 800;
+  const vh = wrapEl.clientHeight || 600;
+  const scale = Math.min(0.95, Math.min(vw / svgW, vh / svgH));
+  const tx = (vw - svgW * scale) / 2;
+  const ty = (vh - svgH * scale) / 2;
+  svgEl.call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+
+  const linkGroup = zoomContainer.append('g');
+  const nodeGroup = zoomContainer.append('g');
+
+  linkPaths = linkGroup.selectAll('path').data(links).join('path')
+    .attr('fill','none').attr('stroke','#888')
+    .attr('stroke-width',1).attr('opacity',0.35)
+    .attr('marker-end','url(#arr)')
+    .attr('d', d => linkPath(d.source, d.target));
+
+  const drag = d3.drag()
+    .on('start', function(event, d) {
+      d3.select(this).raise();
+    })
+    .on('drag', function(event, d) {
+      d.x += event.dx;
+      d.y += event.dy;
+      d3.select(this).attr('transform', `translate(${d.x - d.w/2}, ${d.y})`);
+      updateLinks();
+    });
+
+  nodeGroups = nodeGroup.selectAll('g.node-group').data(nodes).join('g')
+    .attr('class','node-group')
+    .attr('transform', d => `translate(${d.x - d.w/2}, ${d.y})`)
+    .call(drag);
+
+  nodeGroups.append('rect')
+    .attr('class','node-bg')
+    .attr('width', d => d.w)
+    .attr('height', NODE_H)
+    .attr('rx', 7)
+    .attr('fill', d => PALETTE[d.depth % PALETTE.length].fill)
+    .attr('stroke', d => PALETTE[d.depth % PALETTE.length].stroke)
+    .attr('stroke-width', 1);
+
+  const textCx = d => (d.w - RADIO_AREA) / 2;
+
+  nodeGroups.append('text')
+    .attr('class','node-label')
+    .attr('x', d => textCx(d))
+    .attr('y', NODE_H / 2)
+    .attr('text-anchor','middle')
+    .attr('dominant-baseline','central')
+    .attr('font-size','12px')
+    .attr('fill', d => PALETTE[d.depth % PALETTE.length].text)
+    .text(d => d.label);
+
+  nodeGroups.append('line')
+    .attr('class','strike-line')
+    .attr('x1', d => textCx(d) - Math.min(d.label.length * 3.6, d.w * 0.38))
+    .attr('x2', d => textCx(d) + Math.min(d.label.length * 3.6, d.w * 0.38))
+    .attr('y1', NODE_H / 2)
+    .attr('y2', NODE_H / 2)
+    .attr('stroke', d => PALETTE[d.depth % PALETTE.length].strikeStroke)
+    .attr('stroke-width', 2)
+    .attr('opacity', 0)
+    .attr('pointer-events','none');
+
+  // Dismiss radio (left circle)
+  const radioDismiss = nodeGroups.append('g').attr('class','radio-dismiss');
+  radioDismiss.append('circle').attr('class','radio-ring')
+    .attr('cx', d => d.w - RADIO_GAP - RADIO_R * 2 - 4)
+    .attr('cy', NODE_H / 2).attr('r', RADIO_R)
+    .attr('fill','none').attr('stroke','#D85A30').attr('stroke-width',1.5);
+  radioDismiss.append('circle').attr('class','radio-dot')
+    .attr('cx', d => d.w - RADIO_GAP - RADIO_R * 2 - 4)
+    .attr('cy', NODE_H / 2).attr('r', RADIO_INNER_R)
+    .attr('fill','#D85A30').attr('opacity', 0);
+  radioDismiss.on('click', function(event, d) {
+    event.stopPropagation();
+    d.state = d.state === 'dismissed' ? 'normal' : 'dismissed';
+    updateNodeState(d);
+  });
+
+  // Confirm radio (right circle)
+  const radioConfirm = nodeGroups.append('g').attr('class','radio-confirm');
+  radioConfirm.append('circle').attr('class','radio-ring')
+    .attr('cx', d => d.w - RADIO_R - 4)
+    .attr('cy', NODE_H / 2).attr('r', RADIO_R)
+    .attr('fill','none').attr('stroke','#1D9E75').attr('stroke-width',1.5);
+  radioConfirm.append('circle').attr('class','radio-dot')
+    .attr('cx', d => d.w - RADIO_R - 4)
+    .attr('cy', NODE_H / 2).attr('r', RADIO_INNER_R)
+    .attr('fill','#1D9E75').attr('opacity', 0);
+  radioConfirm.on('click', function(event, d) {
+    event.stopPropagation();
+    d.state = d.state === 'confirmed' ? 'normal' : 'confirmed';
+    updateNodeState(d);
+  });
+
+  function updateNodeState(d) {
+    const grp = nodeGroups.filter(n => n.id === d.id);
+
+    grp.select('.node-bg')
+      .attr('fill', () => {
+        if (d.state === 'dismissed') return '#F1EFE8';
+        if (d.state === 'confirmed') return '#E1F5EE';
+        return PALETTE[d.depth % PALETTE.length].fill;
+      })
+      .attr('stroke', () => {
+        if (d.state === 'dismissed') return '#B4B2A9';
+        if (d.state === 'confirmed') return '#1D9E75';
+        return PALETTE[d.depth % PALETTE.length].stroke;
+      });
+
+    grp.select('.node-label')
+      .attr('fill', () => {
+        if (d.state === 'dismissed') return '#888780';
+        if (d.state === 'confirmed') return '#085041';
+        return PALETTE[d.depth % PALETTE.length].text;
+      })
+      .attr('text-decoration', d.state === 'dismissed' ? 'line-through' : 'none');
+
+    grp.select('.strike-line')
+      .attr('opacity', d.state === 'dismissed' ? 1 : 0);
+
+    grp.select('.radio-dismiss .radio-dot')
+      .attr('opacity', d.state === 'dismissed' ? 1 : 0);
+    grp.select('.radio-dismiss .radio-ring')
+      .attr('stroke', d.state === 'dismissed' ? '#D85A30' : '#D85A3088');
+
+    grp.select('.radio-confirm .radio-dot')
+      .attr('opacity', d.state === 'confirmed' ? 1 : 0);
+    grp.select('.radio-confirm .radio-ring')
+      .attr('stroke', d.state === 'confirmed' ? '#1D9E75' : '#1D9E7588');
+
+    linkPaths
+      .attr('opacity', l => {
+        const sState = l.source.state;
+        const tState = l.target.state;
+        if (sState === 'dismissed' || tState === 'dismissed') return 0.12;
+        return 0.35;
+      })
+      .attr('stroke', l => l.target.state === 'confirmed' ? '#1D9E75' : '#888')
+      .attr('stroke-dasharray', l => l.source.state === 'dismissed' || l.target.state === 'dismissed' ? '4 3' : 'none');
+  }
+
+  const depths = [...new Set(nodes.map(n => n.depth))].sort();
+  const depthLabels = ['root','surface','vector','technique','detail','stage'];
+  const lg = svgEl.append('g').attr('transform', `translate(16, ${svgH - 24})`);
+  depths.forEach((dep, i) => {
+    const gx = i * 130;
+    const col = PALETTE[dep % PALETTE.length];
+    lg.append('rect').attr('x',gx).attr('y',-10).attr('width',12).attr('height',12)
+      .attr('rx',3).attr('fill',col.fill).attr('stroke',col.stroke).attr('stroke-width',1);
+    lg.append('text').attr('x',gx+16).attr('y',-4)
+      .attr('dominant-baseline','central').attr('font-size','11px')
+      .attr('fill','var(--color-text-secondary)')
+      .text(`depth ${dep}: ${depthLabels[dep] || 'level '+dep}`);
+  });
+}
+
+function tryRender() {
+  const err = document.getElementById('error-msg');
+  try {
+    const val = JSON.parse(document.getElementById('ap-input').value);
+    if (!Array.isArray(val)) throw new Error('Input must be a JSON array');
+    err.textContent = '';
+    render(val);
+  } catch(e) {
+    err.textContent = 'Parse error: ' + e.message;
+  }
+}
+
+document.getElementById('render-btn').addEventListener('click', tryRender);
+
+document.getElementById('zoom-in').addEventListener('click', () => {
+  svgEl && svgEl.transition().duration(250).call(zoomBehavior.scaleBy, 1.4);
+});
+document.getElementById('zoom-out').addEventListener('click', () => {
+  svgEl && svgEl.transition().duration(250).call(zoomBehavior.scaleBy, 1 / 1.4);
+});
+document.getElementById('zoom-reset').addEventListener('click', () => {
+  if (!svgEl) return;
+  const wrapEl = document.getElementById('graph-wrap');
+  const vw = wrapEl.clientWidth || 800;
+  const vh = wrapEl.clientHeight || 600;
+  const scale = Math.min(0.95, Math.min(vw / svgW, vh / svgH));
+  const tx = (vw - svgW * scale) / 2;
+  const ty = (vh - svgH * scale) / 2;
+  svgEl.transition().duration(300).call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+});
+
+tryRender();
+</script>
+

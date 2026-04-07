@@ -3,580 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notes</title>
-    <style>
-        /* ── Themes ── */
-        :root[data-theme="dark"] {
-            --bg:            #000000;
-            --surface:       #16181c;
-            --border:        #2f3336;
-            --text:          #e7e9ea;
-            --subtext:       #71767b;
-            --placeholder:   #536471;
-            --accent:        #1d9bf0;
-            --accent-hover:  #1a8cd8;
-            --nav-hover:     #181818;
-            --btn-text:      #ffffff;
-            --tag-bg:        #031018;
-            --tag-color:     #1d9bf0;
-            --success-bg:    #051e11;
-            --success-color: #00ba7c;
-            --error-bg:      #200e0e;
-            --error-color:   #ff6b6b;
-            --toggle-bg:     #2f3336;
-            --active-pill:   rgba(29,155,240,0.12);
-        }
-        :root[data-theme="light"] {
-            --bg:            #ffffff;
-            --surface:       #f7f9f9;
-            --border:        #eff3f4;
-            --text:          #0f1419;
-            --subtext:       #536471;
-            --placeholder:   #8899a6;
-            --accent:        #1d9bf0;
-            --accent-hover:  #1a8cd8;
-            --nav-hover:     #f7f9f9;
-            --btn-text:      #ffffff;
-            --tag-bg:        #e8f5fe;
-            --tag-color:     #1d9bf0;
-            --success-bg:    #e6f8f1;
-            --success-color: #00ba7c;
-            --error-bg:      #fde8e8;
-            --error-color:   #e0245e;
-            --toggle-bg:     #eff3f4;
-            --active-pill:   rgba(29,155,240,0.1);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            transition: background 0.25s, color 0.25s;
-        }
-
-        /* ── Layout shell ── */
-        .shell {
-            display: flex;
-            width: 100%;
-            max-width: 1100px;
-            min-height: 100vh;
-            position: relative;
-        }
-
-        /* ══════════════════════════
-           SIDEBAR
-        ══════════════════════════ */
-        .sidebar {
-            width: 275px;
-            min-width: 275px;
-            display: flex;
-            flex-direction: column;
-            padding: 0 12px;
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            overflow-y: auto;
-            border-right: 1px solid var(--border);
-        }
-
-        .sidebar-logo {
-            display: flex;
-            align-items: center;
-            padding: 12px 14px;
-            margin: 4px 0;
-            border-radius: 999px;
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-        .sidebar-logo:hover { background: var(--nav-hover); }
-        .sidebar-logo svg { width: 30px; height: 30px; fill: var(--text); }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            padding: 12px 14px;
-            border-radius: 999px;
-            cursor: pointer;
-            font-size: 1.05rem;
-            font-weight: 400;
-            color: var(--text);
-            border: none;
-            background: transparent;
-            width: 100%;
-            text-align: left;
-            transition: background 0.15s;
-            text-decoration: none;
-        }
-        .nav-item:hover { background: var(--nav-hover); }
-        .nav-item.active {
-            font-weight: 700;
-            background: var(--active-pill);
-            color: var(--accent);
-        }
-        .nav-item.active svg { fill: var(--accent); }
-
-        .nav-item svg {
-            width: 26px;
-            height: 26px;
-            fill: var(--text);
-            flex-shrink: 0;
-        }
-
-        /* "Post Note" big sidebar button */
-        .sidebar-post-btn {
-            margin: 18px 0 0 0;
-            background: var(--accent);
-            color: var(--btn-text);
-            font-weight: 700;
-            font-size: 1rem;
-            border: none;
-            border-radius: 999px;
-            padding: 14px;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.2s;
-        }
-        .sidebar-post-btn:hover { background: var(--accent-hover); }
-
-        /* theme toggle at bottom of sidebar */
-        .sidebar-bottom {
-            margin-top: auto;
-            padding: 16px 0;
-        }
-        .toggle-btn {
-            background: var(--toggle-bg);
-            border: none;
-            border-radius: 999px;
-            cursor: pointer;
-            padding: 8px 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text);
-            transition: background 0.2s;
-            width: 100%;
-        }
-        .toggle-btn:hover { background: var(--border); }
-        .toggle-btn svg { width: 17px; height: 17px; fill: var(--text); flex-shrink: 0; }
-
-        /* ══════════════════════════
-           MAIN CONTENT
-        ══════════════════════════ */
-        .main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid var(--border);
-            min-height: 100vh;
-        }
-
-        /* Sticky topbar inside main */
-        .topbar {
-            position: sticky;
-            top: 0;
-            background: color-mix(in srgb, var(--bg) 85%, transparent);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
-            padding: 14px 16px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            z-index: 10;
-        }
-
-        /* ── Home view ── */
-        #homeView {
-            padding: 24px 20px;
-            color: var(--subtext);
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-        .home-welcome {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 8px;
-        }
-        .home-hint {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 20px;
-            background: var(--active-pill);
-            color: var(--accent);
-            border-radius: 999px;
-            padding: 8px 16px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: background 0.15s;
-        }
-        .home-hint:hover { background: rgba(29,155,240,0.2); }
-        .home-hint svg { width: 16px; height: 16px; fill: var(--accent); }
-
-        /* ── CVE Feed ── */
-        .feed-section {
-            margin-top: 28px;
-            border-top: 1px solid var(--border);
-        }
-        .feed-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 0 10px 0;
-        }
-        .feed-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .feed-title .badge {
-            background: #e0245e;
-            color: #fff;
-            font-size: 0.7rem;
-            font-weight: 700;
-            padding: 2px 7px;
-            border-radius: 999px;
-            letter-spacing: 0.04em;
-        }
-        .feed-refresh {
-            background: transparent;
-            border: 1px solid var(--border);
-            border-radius: 999px;
-            color: var(--accent);
-            font-size: 0.78rem;
-            font-weight: 600;
-            padding: 5px 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: background 0.15s;
-        }
-        .feed-refresh:hover { background: var(--active-pill); }
-        .feed-refresh svg { width: 13px; height: 13px; fill: var(--accent); }
-        .feed-refresh.spinning svg { animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .story-list { display: flex; flex-direction: column; }
-
-        .story-card {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 14px 0;
-            border-bottom: 1px solid var(--border);
-            text-decoration: none;
-            color: var(--text);
-            cursor: pointer;
-            transition: background 0.12s;
-            border-radius: 4px;
-        }
-        .story-card:hover { background: var(--nav-hover); padding-left: 6px; padding-right: 6px; }
-
-        .story-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #e0245e22, #e0245e44);
-            border: 1px solid #e0245e44;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .story-icon svg { width: 18px; height: 18px; fill: #e0245e; }
-
-        .story-body { flex: 1; min-width: 0; }
-        .story-title-text {
-            font-size: 0.95rem;
-            font-weight: 600;
-            line-height: 1.4;
-            color: var(--text);
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .story-source {
-            margin-top: 4px;
-            font-size: 0.78rem;
-            color: var(--subtext);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .story-source svg { width: 11px; height: 11px; fill: var(--subtext); }
-
-        .story-arrow {
-            color: var(--subtext);
-            font-size: 1rem;
-            flex-shrink: 0;
-            align-self: center;
-        }
-
-        /* skeleton loader */
-        .skeleton {
-            background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.4s infinite;
-            border-radius: 6px;
-        }
-        @keyframes shimmer { to { background-position: -200% 0; } }
-
-        .skel-card {
-            display: flex;
-            gap: 12px;
-            padding: 14px 0;
-            border-bottom: 1px solid var(--border);
-        }
-        .skel-circle { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; }
-        .skel-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
-        .skel-line { height: 12px; border-radius: 4px; }
-
-        .feed-error {
-            padding: 20px 0;
-            color: var(--error-color);
-            font-size: 0.88rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* ── Composer (hidden by default) ── */
-        #composerView { display: none; }
-
-        .composer-inner {
-            display: flex;
-            gap: 12px;
-            padding: 16px 16px 0 16px;
-        }
-
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #1d9bf0, #0e4f7a);
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1rem;
-            color: #fff;
-            user-select: none;
-        }
-
-        .fields { flex: 1; display: flex; flex-direction: column; }
-
-        .field-title {
-            font-size: 1.25rem;
-            font-weight: 400;
-            color: var(--text);
-            background: transparent;
-            border: none;
-            outline: none;
-            width: 100%;
-            padding: 6px 0;
-[O            caret-color: var(--accent);
-        }
-        .field-title::placeholder { color: var(--placeholder); }
-
-        .divider { height: 1px; background: var(--border); margin: 8px 0; }
-
-        .field-note {
-            font-size: 0.95rem;
-            color: var(--text);
-            background: transparent;
-            border: none;
-            outline: none;
-            resize: none;
-            width: 100%;
-            min-height: 120px;
-            line-height: 1.5;
-            caret-color: var(--accent);
-        }
-        .field-note::placeholder { color: var(--placeholder); }
-
-        .tags-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-            padding: 6px 0;
-        }
-        .tag-chip {
-            background: var(--tag-bg);
-            color: var(--tag-color);
-            border-radius: 999px;
-            padding: 2px 10px;
-            font-size: 0.82rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            border: none;
-        }
-        .tag-chip .remove { cursor: pointer; font-size: 0.75rem; opacity: 0.7; }
-        .tag-chip .remove:hover { opacity: 1; }
-
-        .field-tags {
-            background: transparent;
-            border: none;
-            outline: none;
-            color: var(--text);
-            font-size: 0.92rem;
-            flex: 1;
-            min-width: 100px;
-            caret-color: var(--accent);
-        }
-        .field-tags::placeholder { color: var(--placeholder); }
-
-        .toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 16px 14px 56px;
-            border-top: 1px solid var(--border);
-            margin-top: 4px;
-        }
-        .toolbar-icons { display: flex; gap: 4px; }
-        .toolbar-icon {
-            width: 34px; height: 34px;
-            border-radius: 50%;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.15s;
-        }
-        .toolbar-icon:hover { background: rgba(29,155,240,0.12); }
-        .toolbar-icon svg { width: 18px; height: 18px; fill: var(--accent); }
-
-        .char-counter { font-size: 0.8rem; color: var(--subtext); margin-right: 12px; }
-        .char-counter.warn { color: #f4212e; }
-
-        .submit-btn {
-            background: var(--accent);
-            color: var(--btn-text);
-            font-weight: 700;
-            font-size: 0.92rem;
-            border: none;
-            border-radius: 999px;
-            padding: 8px 18px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-        }
-        .submit-btn:hover { background: var(--accent-hover); }
-        .submit-btn:active { transform: scale(0.97); }
-        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        /* ── Toast ── */
-        #toast {
-            position: fixed;
-            bottom: 28px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s, transform 0.25s;
-            z-index: 100;
-            white-space: nowrap;
-        }
-        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-        #toast.success { background: var(--success-bg); color: var(--success-color); border: 1px solid var(--success-color); }
-        #toast.error   { background: var(--error-bg);   color: var(--error-color);   border: 1px solid var(--error-color); }
-
-        /* ── Responsive: collapse sidebar on small screens ── */
-[I        @media (max-width: 700px) {
-            .sidebar { width: 60px; min-width: 60px; padding: 0 4px; }
-            .nav-label, .sidebar-post-btn, .toggle-label { display: none; }
-            .nav-item { justify-content: center; gap: 0; padding: 12px; }
-            .sidebar-logo { justify-content: center; padding: 12px; }
-            .toggle-btn { justify-content: center; padding: 10px; }
-        }
-    </style>
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 </head>
 <body>
-<div class="shell">
 
     <!-- ══ SIDEBAR ══ -->
     <aside class="sidebar">
-        <!-- Logo -->
-        <div class="sidebar-logo" onclick="navigate('home')">
-            <svg viewBox="0 0 24 24">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-            </svg>
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zm0 11h7v7H3zm11-11h7v7h-7zm0 11h7v7h-7z"/></svg>
+            </div>
+            <span class="brand-name">SecNotes</span>
         </div>
 
-        <!-- Home -->
-        <button class="nav-item active" id="nav-home" onclick="navigate('home')">
-            <svg viewBox="0 0 24 24"><path d="M12 1.696L.622 8.807l1.06 1.696L3 9.679V19.5C3 20.881 4.119 22 5.5 22h4a1 1 0 0 0 1-1v-5h3v5a1 1 0 0 0 1 1h4c1.381 0 2.5-1.119 2.5-2.5V9.679l1.318.824 1.06-1.696L12 1.696zM19 19.5c0 .276-.224.5-.5.5H15v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5H5.5a.5.5 0 0 1-.5-.5V8.429l7-4.375 7 4.375V19.5z"/></svg>
-            <span class="nav-label">Home</span>
-        </button>
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Menu</div>
 
-        <!-- Add Note -->
-        <button class="nav-item" id="nav-addnote" onclick="navigate('addnote')">
-            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.105 0-2 .895-2 2v14c0 1.105.895 2 2 2h14c1.105 0 2-.895 2-2V5c0-1.105-.895-2-2-2zm-7 12h-3v-3H7v-2h2V7h2v3h3v2h-3v3z"/></svg>
-            <span class="nav-label">Add Note</span>
-        </button>
+            <button class="nav-item active" id="nav-home" onclick="navigate('home')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                <span class="nav-label">Dashboard</span>
+            </button>
 
-        <!-- Big post button (mirrors X's compose button) -->
-        <button class="sidebar-post-btn" onclick="navigate('addnote')">+ New Note</button>
+            <button class="nav-item" id="nav-addnote" onclick="navigate('addnote')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM11 15H7v-2h4zm6 0h-4v-2h4zm0 4H7v-2h10z"/></svg>
+                <span class="nav-label">Notes</span>
+            </button>
 
-        <!-- Bottom: theme toggle -->
+            <button class="nav-item" id="nav-mindmap" onclick="navigate('mindmap')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M17 12a5 5 0 1 0-5 5v2H9v2h2v2h2v-2h2v-2h-2v-2a5 5 0 0 0 5-5zm-5 3a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM3 6a3 3 0 1 0 3-3A3 3 0 0 0 3 6zm3 1a1 1 0 1 1 1-1 1 1 0 0 1-1 1zM3 18a3 3 0 1 0 3-3 3 3 0 0 0-3 3zm3 1a1 1 0 1 1 1-1 1 1 0 0 1-1 1zm13-4a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm0-4a1 1 0 1 1-1 1 1 1 0 0 1 1-1z"/></svg>
+                <span class="nav-label">Attack Map</span>
+            </button>
+        </div>
+
         <div class="sidebar-bottom">
-            <button class="toggle-btn" onclick="toggleTheme()">
+            <button class="theme-btn" onclick="toggleTheme()">
                 <svg id="theme-icon" viewBox="0 0 24 24">
                     <path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2a7 7 0 1 1 0-14 7 7 0 0 1 0 14zm0-18a1 1 0 0 1 1 1v1a1 1 0 0 1-2 0V2a1 1 0 0 1 1-1zm0 18a1 1 0 0 1 1 1v1a1 1 0 0 1-2 0v-1a1 1 0 0 1 1-1zm9-9a1 1 0 0 1 0 2h-1a1 1 0 0 1 0-2h1zM4 11a1 1 0 0 1 0 2H3a1 1 0 0 1 0-2h1zm14.657-6.243a1 1 0 0 1 0 1.414l-.707.707a1 1 0 0 1-1.414-1.414l.707-.707a1 1 0 0 1 1.414 0zM7.05 16.95a1 1 0 0 1 0 1.414l-.707.707a1 1 0 0 1-1.414-1.414l.707-.707A1 1 0 0 1 7.05 16.95zm11.314 1.414a1 1 0 0 1-1.414 0l-.707-.707a1 1 0 0 1 1.414-1.414l.707.707a1 1 0 0 1 0 1.414zM7.05 7.05a1 1 0 0 1-1.414 0l-.707-.707A1 1 0 0 1 6.343 4.93l.707.707A1 1 0 0 1 7.05 7.05z"/>
                 </svg>
-                <span id="theme-label" class="toggle-label">Light Mode</span>
+                <span id="theme-label" class="theme-label">Light Mode</span>
             </button>
         </div>
     </aside>
 
-    <!-- ══ MAIN ══ -->
-    <main class="main">
+    <!-- ══ MAIN WRAPPER ══ -->
+    <div class="main-wrapper">
 
-        <!-- Sticky topbar -->
-        <div class="topbar" id="topbarTitle">Home</div>
+        <!-- Top bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <span class="topbar-title" id="topbarTitle">Dashboard</span>
+            </div>
+            <div class="topbar-right">
+                <button class="new-note-btn" onclick="navigate('addnote')">
+                    <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 12h-3v-3H7v-2h2V7h2v3h3v2h-3v3z"/></svg>
+                    New Note
+                </button>
+            </div>
+        </header>
 
-        <!-- HOME view -->
-        <div id="homeView" style="padding: 20px 20px 40px 20px;">
-            <div class="home-welcome">Welcome to Notes</div>
-            <p style="color:var(--subtext); font-size:0.93rem; margin-top:4px;">Save and organise your security notes.</p>
-            <button class="home-hint" onclick="navigate('addnote')">
-                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.105 0-2 .895-2 2v14c0 1.105.895 2 2 2h14c1.105 0 2-.895 2-2V5c0-1.105-.895-2-2-2zm-7 12h-3v-3H7v-2h2V7h2v3h3v2h-3v3z"/></svg>
-                Add your first note
-            </button>
+        <!-- ══ HOME VIEW ══ -->
+        <div id="homeView" class="page-content">
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">CVE Feed</div>
+                    <div class="stat-value" id="cveCount">—</div>
+                    <div class="stat-sub"><span class="stat-dot"></span>Live updates</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Saved Notes</div>
+                    <div class="stat-value" id="notesCount">—</div>
+                    <div class="stat-sub">Security notes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Attack Maps</div>
+                    <div class="stat-value">→</div>
+                    <div class="stat-sub"><button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.78rem;padding:0;" onclick="navigate('mindmap')">Open builder</button></div>
+                </div>
+            </div>
 
-[O            <!-- CVE Feed -->
-            <div class="feed-section">
-                <div class="feed-header">
-                    <div class="feed-title">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#e0245e"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--danger)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                         Latest CVEs &amp; Vulnerabilities
-                        <span class="badge">LIVE</span>
+                        <span class="live-badge">LIVE</span>
                     </div>
-                    <button class="feed-refresh" id="refreshBtn" onclick="loadCVEs()">
+                    <button class="refresh-btn" id="refreshBtn" onclick="loadCVEs()">
                         <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
                         Refresh
                     </button>
@@ -585,246 +99,159 @@
             </div>
         </div>
 
-        <!-- ADD NOTE / COMPOSER view (hidden by default) -->
-        <div id="composerView">
-            <div class="composer-inner">
-                <div class="avatar">N</div>
-                <div class="fields">
-                    <input
-                        class="field-title"
-                        id="title"
-                        type="text"
-                        placeholder="Note title..."
-                        maxlength="100"
-                        autocomplete="off"
-                    >
-                    <div class="divider"></div>
-                    <textarea
-                        class="field-note"
-                        id="note"
-                        placeholder="What's on your mind?"
-                        maxlength="500"
-                        oninput="autoResize(this); updateCounter()"
-                    ></textarea>
-                    <div class="divider"></div>
-                    <div class="tags-row" id="tagsRow">
-                        <input
-                            class="field-tags"
-                            id="tagsInput"
-                            type="text"
-                            placeholder="Add a tag and press Enter…"
-                            onkeydown="handleTagInput(event)"
-                        >
+        <!-- ══ NOTES / COMPOSER VIEW ══ -->
+        <div id="composerView" class="page-content">
+            <div class="notes-split">
+
+                <!-- Left: composer -->
+                <div class="composer-card">
+                    <div class="composer-header">New Note</div>
+                    <div class="composer-body">
+                        <div class="form-field">
+                            <label class="form-label" for="title">Title</label>
+                            <input class="field-title" id="title" type="text" placeholder="Note title…" maxlength="100" autocomplete="off">
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label">Content</label>
+                            <div class="md-editor">
+                                <div class="md-tabs">
+                                    <button class="md-tab active" id="note-tab-write" onclick="showNoteMdTab('write')">Write</button>
+                                    <button class="md-tab" id="note-tab-preview" onclick="showNoteMdTab('preview')">Preview</button>
+                                </div>
+                                <textarea class="field-note" id="note" placeholder="Write your note here… (markdown supported)" maxlength="500" oninput="updateCounter()"></textarea>
+                                <div class="md-preview" id="note-preview-area"></div>
+                            </div>
+                            <div class="md-format-hint">Markdown supported: **bold**, _italic_, `code`, ## headings, - lists</div>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label">Tags</label>
+                            <div class="tags-row" id="tagsRow">
+                                <input class="field-tags" id="tagsInput" type="text" placeholder="Add tag, press Enter…" onkeydown="handleTagInput(event)">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="composer-footer">
+                        <span class="char-counter" id="charCounter">0 / 500</span>
+                        <button class="btn-secondary" onclick="clearForm()">Clear</button>
+                        <button class="submit-btn" id="submitBtn" onclick="submitNote()">Save Note</button>
                     </div>
                 </div>
-            </div>
 
-            <div class="toolbar">
-                <div class="toolbar-icons">
-                    <button class="toolbar-icon" title="Focus tags" onclick="document.getElementById('tagsInput').focus()">
-                        <svg viewBox="0 0 24 24"><path d="M21.543 6.498C22 8.28 22 12 22 12s0 3.72-.457 5.502c-.254.985-.997 1.76-1.938 2.022C17.896 20 12 20 12 20s-5.893 0-7.605-.476c-.945-.266-1.687-1.04-1.938-2.022C2 15.72 2 12 2 12s0-3.72.457-5.502c.254-.985.997-1.76 1.938-2.022C6.107 4 12 4 12 4s5.896 0 7.605.476c.945.266 1.687 1.04 1.938 2.022z"/><path d="M10 15l5-3-5-3v6z" fill="white"/></svg>
-                    </button>
-                    <button class="toolbar-icon" title="Clear form" onclick="clearForm()">
-                        <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-                    </button>
+                <!-- Right: saved notes -->
+                <div class="panel notes-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">Saved Notes</div>
+                        <span class="notes-count-badge" id="notesCountBadge"></span>
+                    </div>
+                    <div class="notes-search-row">
+                        <svg class="notes-search-icon" viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+                        <input class="notes-search-input" id="notesSearch" type="text" placeholder="Search by title or tag…" oninput="filterNotes(this.value)" autocomplete="off">
+                    </div>
+                    <div id="notesList"><div class="notes-loading">Loading notes…</div></div>
                 </div>
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span class="char-counter" id="charCounter">0 / 500</span>
-                    <button class="submit-btn" id="submitBtn" onclick="submitNote()">Post Note</button>
+
+            </div>
+        </div>
+
+        <!-- ══ MINDMAP VIEW ══ -->
+        <div id="mindmapView" class="page-content">
+            <div class="mindmap-split">
+                <!-- Left: form -->
+                <div class="panel mindmap-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M17 12a5 5 0 1 0-5 5v2H9v2h2v2h2v-2h2v-2h-2v-2a5 5 0 0 0 5-5zm-5 3a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+                            Attack Path Generator
+                        </div>
+                    </div>
+                    <div class="mindmap-form">
+                        <div class="form-field">
+                            <label class="form-label">Load saved path</label>
+                            <div class="saved-paths-row">
+                                <select class="path-select" id="saved-paths-select" onchange="onPathSelect(this.value)">
+                                    <option value="">— select a saved path —</option>
+                                </select>
+                                <button class="btn-danger-icon" id="delete-path-btn" onclick="confirmDeletePath()" title="Delete selected path" disabled>
+                                    <svg viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="mindmap-name">Map name <span style="color:var(--error-color)">*</span></label>
+                            <input class="mindmap-name-input" id="mindmap-name" type="text" placeholder="e.g. target.com recon" autocomplete="off">
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label">Attack paths</label>
+                            <div class="md-editor">
+                                <div class="md-tabs">
+                                    <button class="md-tab active" id="md-tab-write" onclick="showMdTab('write')">Write</button>
+                                    <button class="md-tab" id="md-tab-preview" onclick="showMdTab('preview')">Preview</button>
+                                </div>
+                                <textarea class="mindmap-textarea" id="mindmap-textarea" spellcheck="false" oninput="autoResizeMd(this)" placeholder="## Login Portal&#10;- SQL Injection&#10;  - Blind SQLi&#10;  - UNION Attack&#10;- Brute Force&#10;&#10;## API Endpoint&#10;- JWT Bypass&#10;- IDOR"></textarea>
+                                <div class="md-preview" id="md-preview-area"></div>
+                            </div>
+                            <div class="md-format-hint">Use ## headings for root nodes, - bullets for paths (indent with spaces for sub-paths)</div>
+                        </div>
+                        <div class="mindmap-error" id="mindmap-error"></div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="submit-btn" id="mindmap-submit-btn" onclick="submitMindmap(false)">Generate Graph</button>
+                            <button class="btn-secondary" id="mindmap-save-btn" onclick="submitMindmap(true)">Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: graph output -->
+                <div class="mindmap-graph-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">Graph Output</div>
+                    </div>
+                    <div class="mindmap-graph-body" id="mindmap-graph-body">
+                        <div class="mindmap-placeholder">
+                            <svg viewBox="0 0 24 24"><path d="M17 12a5 5 0 1 0-5 5v2H9v2h2v2h2v-2h2v-2h-2v-2a5 5 0 0 0 5-5zm-5 3a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM3 6a3 3 0 1 0 3-3A3 3 0 0 0 3 6zm3 1a1 1 0 1 1 1-1 1 1 0 0 1-1 1zM3 18a3 3 0 1 0 3-3 3 3 0 0 0-3 3zm3 1a1 1 0 1 1 1-1 1 1 0 0 1-1 1zm13-4a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm0-4a1 1 0 1 1-1 1 1 1 0 0 1 1-1z"/></svg>
+                            <span>Graph will appear here</span>
+                        </div>
+                    </div>
+                    <div id="mindmap-graph-container" style="display:none; padding: 12px;"></div>
                 </div>
             </div>
         </div>
 
-    </main>
+    </div><!-- /.main-wrapper -->
+
+<!-- Note delete confirmation modal -->
+<div id="note-delete-modal" class="confirm-overlay" style="display:none;" onclick="if(event.target===this)closeNoteDeleteModal()">
+    <div class="confirm-dialog">
+        <div class="confirm-dialog-title">Delete Note</div>
+        <p class="confirm-dialog-body">Delete <strong id="note-delete-name"></strong>? This cannot be undone.</p>
+        <div class="confirm-actions">
+            <button class="btn-secondary" onclick="closeNoteDeleteModal()">Cancel</button>
+            <button class="btn-danger" id="note-confirm-delete-btn" onclick="executeDeleteNote()">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div id="delete-modal" class="confirm-overlay" style="display:none;" onclick="if(event.target===this)closeDeleteModal()">
+    <div class="confirm-dialog">
+        <div class="confirm-dialog-title">Delete Attack Path</div>
+        <p class="confirm-dialog-body">This action cannot be undone. Type <strong>delete</strong> to confirm.</p>
+        <input class="confirm-input" id="delete-confirm-input" type="text" placeholder="Type 'delete'" oninput="onDeleteInput(this.value)">
+        <div class="confirm-actions">
+            <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn-danger" id="confirm-delete-btn" disabled onclick="executeDeletePath()">Delete</button>
+        </div>
+    </div>
 </div>
 
 <div id="toast"></div>
 
-<script>
-    /* ── Navigation ── */
-    function navigate(view) {
-        const homeView     = document.getElementById('homeView');
-        const composerView = document.getElementById('composerView');
-        const topbar       = document.getElementById('topbarTitle');
-        const navHome      = document.getElementById('nav-home');
-        const navAdd       = document.getElementById('nav-addnote');
-
-        if (view === 'home') {
-            homeView.style.display     = 'block';
-            composerView.style.display = 'none';
-            topbar.textContent         = 'Home';
-            navHome.classList.add('active');
-            navAdd.classList.remove('active');
-        } else {
-            homeView.style.display     = 'none';
-            composerView.style.display = 'block';
-            topbar.textContent         = 'Add Note';
-            navAdd.classList.add('active');
-            navHome.classList.remove('active');
-            document.getElementById('title').focus();
-        }
-    }
-
-    /* ── Tags ── */
-    const tags = [];
-
-    function handleTagInput(e) {
-        if (e.key === 'Enter' || e.key === ',') {
-            e.preventDefault();
-            const val = e.target.value.trim().replace(/,/g, '');
-            if (val && !tags.includes(val)) { tags.push(val); renderTags(); }
-            e.target.value = '';
-        }
-        if (e.key === 'Backspace' && e.target.value === '' && tags.length) {
-            tags.pop(); renderTags();
-        }
-    }
-
-    function renderTags() {
-        const row   = document.getElementById('tagsRow');
-        const input = document.getElementById('tagsInput');
-        row.querySelectorAll('.tag-chip').forEach(c => c.remove());
-        tags.forEach((tag, i) => {
-            const chip = document.createElement('div');
-            chip.className = 'tag-chip';
-            chip.innerHTML = `#${tag} <span class="remove" onclick="removeTag(${i})">✕</span>`;
-            row.insertBefore(chip, input);
-        });
-    }
-
-    function removeTag(i) { tags.splice(i, 1); renderTags(); }
-
-    function autoResize(el) {
-        el.style.height = 'auto';
-        el.style.height = el.scrollHeight + 'px';
-    }
-
-    function updateCounter() {
-        const len     = document.getElementById('note').value.length;
-        const counter = document.getElementById('charCounter');
-        counter.textContent = `${len} / 500`;
-        counter.className   = 'char-counter' + (len > 450 ? ' warn' : '');
-    }
-
-    function clearForm() {
-        ['title', 'note', 'tagsInput'].forEach(id => document.getElementById(id).value = '');
-        tags.length = 0; renderTags(); updateCounter();
-    }
-
-    /* ── Submit ── */
-    async function submitNote() {
-        const title = document.getElementById('title').value.trim();
-        const note  = document.getElementById('note').value.trim();
-        const btn   = document.getElementById('submitBtn');
-
-        if (!title) { showToast('⚠️ Title is required.', 'error'); return; }
-        if (!note)  { showToast('⚠️ Note body is required.', 'error'); return; }
-
-        btn.disabled = true; btn.textContent = 'Posting…';
-
-        try {
-            const res  = await fetch('/api/add', {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ title, note, tags: tags.join(',') })
-            });
-            const data = await res.json();
-            if (data.Status === 'Note added') {
-                showToast('✅ Note posted!', 'success');
-                clearForm();
-                setTimeout(() => navigate('home'), 1200);
-            } else {
-                showToast('⚠️ ' + (data.message || JSON.stringify(data)), 'error');
-            }
-        } catch (err) {
-            showToast('❌ Request failed: ' + err.message, 'error');
-        } finally {
-            btn.disabled = false; btn.textContent = 'Post Note';
-        }
-    }
-
-    /* ── Toast ── */
-    let toastTimer;
-    function showToast(msg, type) {
-        const t = document.getElementById('toast');
-        t.textContent = msg;
-        t.className   = type;
-        t.classList.add('show');
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
-    }
-
-    /* ── Theme toggle ── */
-    function toggleTheme() {
-        const html   = document.documentElement;
-        const isDark = html.getAttribute('data-theme') === 'dark';
-        html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-        document.getElementById('theme-label').textContent = isDark ? 'Dark Mode' : 'Light Mode';
-        const icon = document.getElementById('theme-icon');
-        if (isDark) {
-            icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>';
-        } else {
-            icon.innerHTML = '<path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2a7 7 0 1 1 0-14 7 7 0 0 1 0 14zm0-18a1 1 0 0 1 1 1v1a1 1 0 0 1-2 0V2a1 1 0 0 1 1-1zm0 18a1 1 0 0 1 1 1v1a1 1 0 0 1-2 0v-1a1 1 0 0 1 1-1zm9-9a1 1 0 0 1 0 2h-1a1 1 0 0 1 0-2h1zM4 11a1 1 0 0 1 0 2H3a1 1 0 0 1 0-2h1zm14.657-6.243a1 1 0 0 1 0 1.414l-.707.707a1 1 0 0 1-1.414-1.414l.707-.707a1 1 0 0 1 1.414 0zM7.05 16.95a1 1 0 0 1 0 1.414l-.707.707a1 1 0 0 1-1.414-1.414l.707-.707A1 1 0 0 1 7.05 16.95zm11.314 1.414a1 1 0 0 1-1.414 0l-.707-.707a1 1 0 0 1 1.414-1.414l.707.707a1 1 0 0 1 0 1.414zM7.05 7.05a1 1 0 0 1-1.414 0l-.707-.707A1 1 0 0 1 6.343 4.93l.707.707A1 1 0 0 1 7.05 7.05z"/>';
-        }
-    }
-
-    /* ── CVE Feed ── */
-    async function loadCVEs() {
-        const list       = document.getElementById('storyList');
-        const refreshBtn = document.getElementById('refreshBtn');
-
-        // Show skeleton loaders
-        list.innerHTML = Array(5).fill(0).map(() => `
-            <div class="skel-card">
-                <div class="skeleton skel-circle"></div>
-                <div class="skel-lines">
-                    <div class="skeleton skel-line" style="width:90%"></div>
-                    <div class="skeleton skel-line" style="width:60%"></div>
-                </div>
-            </div>
-        `).join('');
-
-        refreshBtn.classList.add('spinning');
-
-        try {
-            const res  = await fetch('/api/cve');
-            const stories = await res.json();
-
-            if (!Array.isArray(stories) || stories.length === 0) {
-                list.innerHTML = '<div class="feed-error">⚠️ No stories found.</div>';
-                return;
-            }
-
-            list.innerHTML = stories.map(s => `
-                <a class="story-card" href="${s.link}" target="_blank" rel="noopener">
-                    <div class="story-icon">
-                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                    </div>
-                    <div class="story-body">
-                        <div class="story-title-text">${escHtml(s.title)}</div>
-                        <div class="story-source">
-                            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm-1 17.93V18a1 1 0 0 1 2 0v1.93A8.001 8.001 0 0 1 4.07 13H6a1 1 0 0 1 0 2H4.07A8.001 8.001 0 0 1 11 4.07V6a1 1 0 0 1 2 0V4.07A8.001 8.001 0 0 1 19.93 11H18a1 1 0 0 1 0-2h1.93A8.001 8.001 0 0 1 13 19.93z"/></svg>
-                            The Hacker News
-                        </div>
-                    </div>
-                    <span class="story-arrow">›</span>
-                </a>
-            `).join('');
-
-        } catch (err) {
-            list.innerHTML = `<div class="feed-error">❌ Failed to load CVEs. Make sure the <code>/api/cve</code> endpoint is running.</div>`;
-        } finally {
-            refreshBtn.classList.remove('spinning');
-        }
-    }
-
-    function escHtml(str) {
-        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    // Load CVEs on page ready
-    loadCVEs();
-</script>
+<script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+<script src="{{ url_for('static', filename='js/nav.js') }}"></script>
+<script src="{{ url_for('static', filename='js/tags.js') }}"></script>
+<script src="{{ url_for('static', filename='js/notes.js') }}"></script>
+<script src="{{ url_for('static', filename='js/mindmap.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cve.js') }}"></script>
 </body>
 </html>
-

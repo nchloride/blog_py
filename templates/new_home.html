@@ -129,10 +129,19 @@ body {
                     {% endif %}
                 </div>
             </div>
+	    <button data-title="{{ note['title'] }}" class="delete-btn">DELETE</button>
         </div>
         {% endfor %}
     </div>
-
+<script>
+	document.querySelectorAll(".delete-btn").forEach(btn => {
+   		 btn.addEventListener("click", function(){
+        		alert(this.dataset.title);
+			 fetch("/api/delete",
+				 {method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:this.dataset.title}) })
+    		});
+	});
+</script>
 </body>
 </html>
 

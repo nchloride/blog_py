@@ -22,6 +22,7 @@ mongoUri = f"mongodb://{user}:{password}@192.168.100.200:27017/blog?authSource=a
 client = MongoClient(mongoUri)
 db = client['blog']
 notes_collection = db.get_collection("notes")
+attack_paths_collection = db.get_collection("attack_paths")
 
 VALID_TOKEN = f"valid_token"
 
@@ -61,7 +62,10 @@ def logout():
 
 @app.route("/admin")
 def admin():
+    beta = request.args.get("beta")
     response = make_response(render_template("admin.html", title="Admin dashboard"))
+    if beta != None:
+        response = make_response(render_template("admin2.html", title="Admin dashboard"))
     return response
     
 
@@ -94,13 +98,11 @@ def addNotes():
     # alreadyExist = filter(lambda x: x["title"] == raw_data["title"],list(notes))
     return json.dumps({"Status":"Note added"})
 
+
 @app.route("/api/notes")
 def getNotes():
     notes = list(notes_collection.find({},{"_id":0}))
-    # remove ObjectId data type to the colelction
-    if len(notes) ==0:
-        return "No stored notes"
-    return json.dumps(notes)
+    return json.dumps(notes), 200, {"Content-Type": "application/json"}
 
 @app.route("/api/delete", methods=["DELETE"])
 def deleteNote():
@@ -113,9 +115,36 @@ def deleteNote():
 def cve():
     isApi = request.args.get("api")
     if isApi != None:
-        ZZ
+        return json.dumps(cve_request())
     print(cve_request())
     return render_template("cve.html",cves=cve_request())
+
+@app.route("/api/attack-paths", methods=["GET"])
+def getAttackPaths():
+    paths = list(attack_paths_collection.find({}, {"_id": 0}))
+    return json.dumps(paths), 200, {"Content-Type": "application/json"}
+
+@app.route("/api/attack-path", methods=["DELETE"])
+def deleteAttackPath():
+    name = request.args.get("name")
+    if not name:
+        return json.dumps({"error": "name is required"}), 400
+    res = attack_paths_collection.delete_one({"name": name})
+    return json.dumps({"deleted": res.deleted_count}), 200, {"Content-Type": "application/json"}
+
+@app.route("/api/attack-path", methods=["POST"])
+def attackPath():
+    data = request.get_json(force=True)
+    if not isinstance(data, list):
+        return json.dumps({"error": "body must be a JSON array"}), 400
+    name     = request.args.get("name", "unnamed")
+    markdown = request.args.get("markdown", "")
+    save     = request.args.get("save", "false").lower() == "true"
+    doc      = {"name": name, "paths": data}
+    if save:
+        doc["markdown"] = markdown
+        attack_paths_collection.insert_one(doc)
+    return render_template("attack_path_gen.html", doc=doc)
 
 @app.route("/util")
 def util():
