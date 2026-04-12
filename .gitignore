@@ -3,3 +3,5 @@ __pycache__
 .git
 blogdb
 recommendations.md
+mcp/
+.claude/

@@ -35,6 +35,11 @@
                 <svg class="nav-icon" viewBox="0 0 24 24"><path d="M17 12a5 5 0 1 0-5 5v2H9v2h2v2h2v-2h2v-2h-2v-2a5 5 0 0 0 5-5zm-5 3a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM3 6a3 3 0 1 0 3-3A3 3 0 0 0 3 6zm3 1a1 1 0 1 1 1-1 1 1 0 0 1-1 1zM3 18a3 3 0 1 0 3-3 3 3 0 0 0-3 3zm3 1a1 1 0 1 1 1-1 1 1 0 0 1-1 1zm13-4a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm0-4a1 1 0 1 1-1 1 1 1 0 0 1 1-1z"/></svg>
                 <span class="nav-label">Attack Map</span>
             </button>
+
+            <button class="nav-item" id="nav-newsfeed" onclick="navigate('newsfeed')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M6.18 15.64a2.18 2.18 0 0 1 2.18 2.18C8.36 19.01 7.38 20 6.18 20C4.98 20 4 19.01 4 17.82a2.18 2.18 0 0 1 2.18-2.18M4 4.44A15.56 15.56 0 0 1 19.56 20h-2.83A12.73 12.73 0 0 0 4 7.27V4.44m0 5.66a9.9 9.9 0 0 1 9.9 9.9h-2.83A7.07 7.07 0 0 0 4 12.93V10.1z"/></svg>
+                <span class="nav-label">Newsfeed</span>
+            </button>
         </div>
 
         <div class="sidebar-bottom">
@@ -169,7 +174,7 @@
                             <label class="form-label">Load saved path</label>
                             <div class="saved-paths-row">
                                 <select class="path-select" id="saved-paths-select" onchange="onPathSelect(this.value)">
-                                    <option value="">— select a saved path —</option>
+                                    <option value="">New attack path</option>
                                 </select>
                                 <button class="btn-danger-icon" id="delete-path-btn" onclick="confirmDeletePath()" title="Delete selected path" disabled>
                                     <svg viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -180,22 +185,49 @@
                             <label class="form-label" for="mindmap-name">Map name <span style="color:var(--error-color)">*</span></label>
                             <input class="mindmap-name-input" id="mindmap-name" type="text" placeholder="e.g. target.com recon" autocomplete="off">
                         </div>
-                        <div class="form-field">
-                            <label class="form-label">Attack paths</label>
-                            <div class="md-editor">
-                                <div class="md-tabs">
-                                    <button class="md-tab active" id="md-tab-write" onclick="showMdTab('write')">Write</button>
-                                    <button class="md-tab" id="md-tab-preview" onclick="showMdTab('preview')">Preview</button>
+                        <!-- Tab bar -->
+                        <div class="form-tabs">
+                            <button class="form-tab active" id="ftab-paths" onclick="switchFormTab('paths')">Attack Paths</button>
+                            <button class="form-tab"        id="ftab-notes" onclick="switchFormTab('notes')">Pentest Note</button>
+                        </div>
+
+                        <!-- Pane: Attack Paths -->
+                        <div class="form-tab-pane" id="fpane-paths">
+                            <div class="md-live-editor">
+                                <div class="md-live-header">
+                                    <span class="md-live-col-label">Write</span>
+                                    <span class="md-live-col-label">Preview</span>
                                 </div>
-                                <textarea class="mindmap-textarea" id="mindmap-textarea" spellcheck="false" oninput="autoResizeMd(this)" placeholder="## Login Portal&#10;- SQL Injection&#10;  - Blind SQLi&#10;  - UNION Attack&#10;- Brute Force&#10;&#10;## API Endpoint&#10;- JWT Bypass&#10;- IDOR"></textarea>
-                                <div class="md-preview" id="md-preview-area"></div>
+                                <div class="md-live-split">
+                                    <textarea class="mindmap-textarea" id="mindmap-textarea" spellcheck="false" oninput="onMindmapInput(this)" placeholder="## Login Portal&#10;- SQL Injection&#10;  - Blind SQLi&#10;  - UNION Attack&#10;- Brute Force&#10;&#10;## API Endpoint&#10;- JWT Bypass&#10;- IDOR"></textarea>
+                                    <div class="md-live-preview" id="md-preview-area"><span class="md-live-empty">Preview will appear here…</span></div>
+                                </div>
                             </div>
                             <div class="md-format-hint">Use ## headings for root nodes, - bullets for paths (indent with spaces for sub-paths)</div>
                         </div>
+
+                        <!-- Pane: Pentest Note -->
+                        <div class="form-tab-pane" id="fpane-notes" style="display:none">
+                            <div class="md-live-editor">
+                                <div class="md-live-header">
+                                    <span class="md-live-col-label">Write</span>
+                                    <span class="md-live-col-label">Preview</span>
+                                </div>
+                                <div class="md-live-split">
+                                    <textarea class="mindmap-textarea" id="pentest-note-textarea" spellcheck="false" oninput="onPentestNoteInput(this)" placeholder="Add findings, observations, loot…"></textarea>
+                                    <div class="md-live-preview" id="pentest-note-preview"><span class="md-live-empty">Preview will appear here…</span></div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mindmap-error" id="mindmap-error"></div>
-                        <div style="display:flex; gap:8px;">
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
                             <button class="submit-btn" id="mindmap-submit-btn" onclick="submitMindmap(false)">Generate Graph</button>
                             <button class="btn-secondary" id="mindmap-save-btn" onclick="submitMindmap(true)">Save</button>
+                            <button class="btn-analyze" id="analyze-btn" onclick="analyzeWithClaude()">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right:5px;vertical-align:middle"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 17.93V18a1 1 0 0 0-2 0v1.93A8 8 0 0 1 4.07 13H6a1 1 0 0 0 0-2H4.07A8 8 0 0 1 11 4.07V6a1 1 0 0 0 2 0V4.07A8 8 0 0 1 19.93 11H18a1 1 0 0 0 0 2h1.93A8 8 0 0 1 13 19.93z"/></svg>
+                                Analyze Note
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -216,7 +248,69 @@
             </div>
         </div>
 
+        <!-- ══ NEWSFEED VIEW ══ -->
+        <div id="newsfeedView" class="page-content" style="display:none">
+
+            <!-- Feed manager panel -->
+            <div class="panel" style="margin-bottom:20px">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--accent)"><path d="M6.18 15.64a2.18 2.18 0 0 1 2.18 2.18C8.36 19.01 7.38 20 6.18 20C4.98 20 4 19.01 4 17.82a2.18 2.18 0 0 1 2.18-2.18M4 4.44A15.56 15.56 0 0 1 19.56 20h-2.83A12.73 12.73 0 0 0 4 7.27V4.44m0 5.66a9.9 9.9 0 0 1 9.9 9.9h-2.83A7.07 7.07 0 0 0 4 12.93V10.1z"/></svg>
+                        RSS Feeds
+                    </div>
+                    <button class="refresh-btn" id="feeds-toggle-btn" onclick="toggleFeedsPanel()" title="Toggle feeds panel">
+                        <svg id="feeds-toggle-icon" viewBox="0 0 24 24" style="transition:transform 0.2s"><path d="M7 10l5 5 5-5z"/></svg>
+                        Hide
+                    </button>
+                </div>
+                <div id="feeds-panel-body">
+                    <div class="newsfeed-add-row">
+                        <input id="feed-url-input" class="newsfeed-url-input" type="text" placeholder="Paste RSS URL or YouTube channel URL / @handle…">
+                        <input id="feed-label-input" class="newsfeed-label-input" type="text" placeholder="Label (optional)">
+                        <button class="submit-btn" onclick="addFeed()">Subscribe</button>
+                    </div>
+                    <div id="feeds-list" class="feeds-list"></div>
+                </div>
+            </div>
+
+            <!-- Articles panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        Latest Articles
+                        <span class="live-badge">LIVE</span>
+                    </div>
+                    <button class="refresh-btn" id="newsfeed-refresh-btn" onclick="loadNewsfeed()">
+                        <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                        Refresh
+                    </button>
+                </div>
+                <div id="newsfeed-articles" class="story-list"></div>
+            </div>
+
+        </div>
+
     </div><!-- /.main-wrapper -->
+
+<!-- Note edit modal -->
+<div id="note-edit-modal" class="confirm-overlay" style="display:none;" onclick="if(event.target===this)closeNoteEditModal()">
+    <div class="confirm-dialog note-edit-dialog">
+        <div class="confirm-dialog-title">Edit Note</div>
+        <div class="note-edit-title-display" id="note-edit-title-display"></div>
+        <div class="note-edit-field">
+            <label class="note-edit-label" for="note-edit-body">Content</label>
+            <textarea class="note-edit-textarea" id="note-edit-body" placeholder="Note body (markdown supported)…"></textarea>
+        </div>
+        <div class="note-edit-field">
+            <label class="note-edit-label" for="note-edit-tags">Tags <span class="note-edit-hint">(comma-separated)</span></label>
+            <input class="note-edit-tags-input" id="note-edit-tags" type="text" placeholder="e.g. xss, owasp, recon">
+        </div>
+        <div class="confirm-actions">
+            <button class="btn-secondary" onclick="closeNoteEditModal()">Cancel</button>
+            <button class="submit-btn" id="note-edit-save-btn" onclick="saveNoteEdit()">Save</button>
+        </div>
+    </div>
+</div>
 
 <!-- Note delete confirmation modal -->
 <div id="note-delete-modal" class="confirm-overlay" style="display:none;" onclick="if(event.target===this)closeNoteDeleteModal()">
@@ -253,5 +347,6 @@
 <script src="{{ url_for('static', filename='js/notes.js') }}"></script>
 <script src="{{ url_for('static', filename='js/mindmap.js') }}"></script>
 <script src="{{ url_for('static', filename='js/cve.js') }}"></script>
+<script src="{{ url_for('static', filename='js/newsfeed.js') }}"></script>
 </body>
 </html>

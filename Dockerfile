@@ -14,7 +14,7 @@ USER www-data
 ENV user=admin
 ENV pass=pass123
 
-RUN pip install --no-cache-dir flask pymongo requests beautifulsoup4 
+RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 80
 

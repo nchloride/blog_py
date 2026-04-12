@@ -1,21 +1,35 @@
-function showMdTab(tab) {
-    const ta      = document.getElementById('mindmap-textarea');
-    const preview = document.getElementById('md-preview-area');
-    const wBtn    = document.getElementById('md-tab-write');
-    const pBtn    = document.getElementById('md-tab-preview');
-    if (tab === 'preview') {
-        preview.innerHTML = marked.parse(ta.value || '_Nothing to preview yet._');
-        ta.style.display      = 'none';
-        preview.style.display = 'block';
-        wBtn.classList.remove('active');
-        pBtn.classList.add('active');
+let _currentEditName = null;
+
+function switchFormTab(tab) {
+    ['paths', 'notes'].forEach(t => {
+        document.getElementById('ftab-' + t).classList.toggle('active', t === tab);
+        document.getElementById('fpane-' + t).style.display = t === tab ? '' : 'none';
+    });
+}
+
+function onPentestNoteInput(ta) {
+    autoResizeMd(ta);
+    const preview = document.getElementById('pentest-note-preview');
+    if (ta.value.trim()) {
+        preview.innerHTML = marked.parse(ta.value);
     } else {
-        preview.style.display = 'none';
-        ta.style.display      = 'block';
-        ta.focus();
-        pBtn.classList.remove('active');
-        wBtn.classList.add('active');
+        preview.innerHTML = '<span class="md-live-empty">Preview will appear here…</span>';
     }
+}
+
+function onMindmapInput(ta) {
+    autoResizeMd(ta);
+    const preview = document.getElementById('md-preview-area');
+    if (ta.value.trim()) {
+        preview.innerHTML = marked.parse(ta.value);
+    } else {
+        preview.innerHTML = '<span class="md-live-empty">Preview will appear here…</span>';
+    }
+}
+
+function _setEditMode(isEdit) {
+    const saveBtn = document.getElementById('mindmap-save-btn');
+    saveBtn.textContent = isEdit ? 'Edit' : 'Save';
 }
 
 function markdownToAttackPath(md) {
@@ -64,10 +78,26 @@ function markdownToAttackPath(md) {
     return clean(result);
 }
 
-async function renderGraph(parsed, name, markdown, save) {
+async function renderGraph(parsed, name, markdown, save, pentestNote, isEdit = false) {
     const params = new URLSearchParams({ name });
-    if (save) { params.set('save', 'true'); params.set('markdown', markdown); }
-    const res  = await fetch('/api/attack-path?' + params.toString(), {
+
+    if (save && isEdit) {
+        // Edit: PUT to update, then POST without save to get the rendered graph
+        const editParams = new URLSearchParams({ name, markdown, pentest_note: pentestNote || '' });
+        await fetch('/api/attack-path?' + editParams.toString(), {
+            method:  'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(parsed)
+        });
+    } else if (save) {
+        params.set('save', 'true');
+        params.set('markdown', markdown);
+        params.set('pentest_note', pentestNote || '');
+    }
+
+    // Always POST for graph HTML (without save flag when editing)
+    const renderParams = new URLSearchParams({ name });
+    const res  = await fetch('/api/attack-path?' + (save && !isEdit ? params : renderParams).toString(), {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(parsed)
@@ -124,7 +154,7 @@ const DEFAULT_MD = `## Login Portal
 async function loadDefaultGraph() {
     const ta = document.getElementById('mindmap-textarea');
     if (!ta.value.trim()) ta.value = DEFAULT_MD;
-    autoResizeMd(ta);
+    onMindmapInput(ta);
     try {
         const parsed = markdownToAttackPath(ta.value);
         if (parsed.length) await renderGraph(parsed, 'default', ta.value, false);
@@ -155,23 +185,63 @@ async function submitMindmap(save) {
         return;
     }
 
+    const isEdit = !!_currentEditName;
+
     if (save) {
-        saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+        saveBtn.disabled = true; saveBtn.textContent = isEdit ? 'Editing…' : 'Saving…';
     } else {
         genBtn.disabled = true; genBtn.textContent = 'Generating…';
     }
 
+    const pentestNote = document.getElementById('pentest-note-textarea').value;
     try {
-        await renderGraph(parsed, name || 'unnamed', raw, save);
+        await renderGraph(parsed, name || 'unnamed', raw, save, pentestNote, isEdit);
         if (save) {
-            showToast('✅ Attack path saved!', 'success');
+            showToast(isEdit ? '✅ Attack path updated!' : '✅ Attack path saved!', 'success');
             loadAttackPaths();
         }
     } catch (err) {
         errorEl.textContent = 'Request failed: ' + err.message;
     } finally {
-        genBtn.disabled  = false; genBtn.textContent  = 'Generate Graph';
-        saveBtn.disabled = false; saveBtn.textContent = 'Save';
+        genBtn.disabled  = false; genBtn.textContent = 'Generate Graph';
+        saveBtn.disabled = false; _setEditMode(isEdit);
+    }
+}
+
+async function analyzeWithClaude() {
+    const pentestNote = document.getElementById('pentest-note-textarea').value.trim();
+    const errorEl     = document.getElementById('mindmap-error');
+    const btn         = document.getElementById('analyze-btn');
+
+    errorEl.textContent = '';
+
+    if (!pentestNote) {
+        errorEl.textContent = 'Add a pentest note first (Pentest Note tab).';
+        switchFormTab('notes');
+        return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Analyzing…';
+
+    try {
+        const res  = await fetch('/api/analyze-path', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ pentest_note: pentestNote })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Server error');
+
+        const ta = document.getElementById('mindmap-textarea');
+        ta.value = data.result;
+        onMindmapInput(ta);
+        switchFormTab('paths');
+        showToast('✅ Attack path generated!', 'success');
+    } catch (err) {
+        errorEl.textContent = 'Analysis failed: ' + err.message;
+    } finally {
+        btn.disabled = false; btn.textContent = 'Analyze Note';
+        btn.querySelector('svg').style.display = '';
     }
 }
 
@@ -189,7 +259,7 @@ async function loadAttackPaths() {
         _savedPaths = await res.json();
         const sel   = document.getElementById('saved-paths-select');
         const cur   = sel.value;
-        sel.innerHTML = '<option value="">— select a saved path —</option>';
+        sel.innerHTML = '<option value="">New attack path</option>';
         _savedPaths.forEach(p => {
             const opt = document.createElement('option');
             opt.value = p.name;
@@ -201,16 +271,36 @@ async function loadAttackPaths() {
     } catch(_) {}
 }
 
+function _clearMindmapForm() {
+    const ta = document.getElementById('mindmap-textarea');
+    ta.value = '';
+    onMindmapInput(ta);
+    document.getElementById('mindmap-name').value = '';
+    const noteTA = document.getElementById('pentest-note-textarea');
+    noteTA.value = '';
+    onPentestNoteInput(noteTA);
+    document.getElementById('mindmap-error').textContent = '';
+    _currentEditName = null;
+    _setEditMode(false);
+}
+
 function onPathSelect(name) {
     document.getElementById('delete-path-btn').disabled = !name;
-    if (!name) return;
+    if (!name) {
+        _clearMindmapForm();
+        return;
+    }
     const path = _savedPaths.find(p => p.name === name);
     if (!path) return;
     const ta = document.getElementById('mindmap-textarea');
     ta.value = path.markdown || '';
-    autoResizeMd(ta);
+    onMindmapInput(ta);
     document.getElementById('mindmap-name').value = path.name;
-    showMdTab('write');
+    const noteTA = document.getElementById('pentest-note-textarea');
+    noteTA.value = path.pentest_note || '';
+    onPentestNoteInput(noteTA);
+    _currentEditName = name;
+    _setEditMode(true);
 }
 
 function confirmDeletePath() {

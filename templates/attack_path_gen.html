@@ -43,7 +43,8 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script>
-const DEFAULT = {{ doc.paths | tojson }};
+const DEFAULT   = {{ doc.paths | tojson }};
+const MAP_NAME  = {{ doc.name | tojson }};
 
 document.getElementById('ap-input').value = JSON.stringify(DEFAULT, null, 2);
 
@@ -75,8 +76,8 @@ function buildTree(data) {
   }
   const roots = data.map(d => walk(d, 1));
   const rootSubtreeW = roots.reduce((s, r) => s + r.subtreeW, 0) + (roots.length - 1) * MIN_SIBLING_GAP;
-  const root = { id: id++, label: "target system", depth: 0, children: roots, x: 0, y: 0, w: charW("target system"), state: 'normal' };
-  root.subtreeW = Math.max(charW("target system"), rootSubtreeW);
+  const root = { id: id++, label: MAP_NAME, depth: 0, children: roots, x: 0, y: 0, w: charW(MAP_NAME), state: 'normal' };
+  root.subtreeW = Math.max(charW(MAP_NAME), rootSubtreeW);
   return root;
 }
 
