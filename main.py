@@ -1,21 +1,43 @@
 from flask import *
 from pymongo import MongoClient
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 import json
 import os
+import time
 import urllib.parse
 from bs4 import BeautifulSoup
 import requests
 from bson import json_util, ObjectId
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from utility.cve import cve_request
 from utility.rss import resolve_feed_url, fetch_feeds
 ip = "192.168.100.200"
 
-app = Flask(__name__)
-app.secret_key = "super_secret_key_hahaha"
-notes=[]
+# ── Startup guards ─────────────────────────────────────────────────────────────
+_SECRET_KEY      = os.environ.get("SECRET_KEY", "")
+_PASSWORD_HASH   = os.environ.get("APP_PASSWORD_HASH", "")
+_WEAK_DEFAULTS   = {"super_secret_key_hahaha", "secret", "changeme", ""}
 
+if _SECRET_KEY in _WEAK_DEFAULTS:
+    raise RuntimeError("SECRET_KEY env var is missing or weak. Set a strong random value.")
+if not _PASSWORD_HASH:
+    raise RuntimeError("APP_PASSWORD_HASH env var is not set. Run utility/hash_password.py to generate one.")
+
+app = Flask(__name__)
+app.secret_key = _SECRET_KEY
+app.permanent_session_lifetime = timedelta(hours=8)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+)
+
+ph = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=2)
+
+limiter = Limiter(get_remote_address, app=app, default_limits=[])
 
 user = urllib.parse.quote_plus(os.environ['user'])
 password = urllib.parse.quote_plus(os.environ['pass'])
@@ -27,14 +49,11 @@ notes_collection = db.get_collection("notes")
 attack_paths_collection = db.get_collection("attack_paths")
 rss_feeds_collection = db.get_collection("rss_feeds")
 
-VALID_TOKEN = f"valid_token"
-
 @app.before_request
 def check_auth():
-    token = request.headers.get("Authorization")
-    endpoints_without_auth = ["login","authentication","cve","home"]
-    if 'pass' not in session and request.endpoint not in endpoints_without_auth:
-        return redirect(url_for("login")), 401
+    endpoints_without_auth = ["login", "authentication", "cve"]
+    if not session.get("authenticated") and request.endpoint not in endpoints_without_auth:
+        return redirect(url_for("login"))
 
 
 def parse_json(data):
@@ -42,7 +61,7 @@ def parse_json(data):
 
 @app.route("/login")
 def login():
-    if 'pass' in session:
+    if session.get("authenticated"):
         return redirect(url_for("home"))
     return render_template("login.html")
 @app.route("/add")
@@ -58,9 +77,9 @@ def home():
     
     return "<h1>HELLO THEREE</h1>"
 
-@app.route("/api/logout")
+@app.route("/api/logout", methods=["POST"])
 def logout():
-    session.pop("pass",None)
+    session.clear()
     return redirect(url_for("login"))
 
 @app.route("/admin")
@@ -72,16 +91,20 @@ def admin():
     return response
     
 
-@app.route("/api/auth",methods=["POST"])
+@app.route("/api/auth", methods=["POST"])
+@limiter.limit("10 per 15 minutes")
 def authentication():
-    if request.method != "POST":
-        return redirect(url_for("home"))
-    password = request.form.get("password")
-    if password != "secret_password":
-        return json.dumps({"message":"try again"})
-    session["pass"] = password
-    res = make_response(redirect(url_for("admin")))
-    return res
+    data = request.get_json(silent=True) or {}
+    submitted = data.get("password", "")
+    try:
+        ph.verify(_PASSWORD_HASH, submitted)
+    except VerifyMismatchError:
+        time.sleep(0.5)
+        return json.dumps({"error": "invalid_credentials"}), 401, {"Content-Type": "application/json"}
+    session.permanent = True
+    session["authenticated"] = True
+    session["auth_ts"] = int(time.time())
+    return json.dumps({"ok": True}), 200, {"Content-Type": "application/json"}
 
 @app.route("/api/cve")
 def cve_api():

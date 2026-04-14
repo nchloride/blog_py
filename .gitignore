@@ -5,3 +5,5 @@ blogdb
 recommendations.md
 mcp/
 .claude/
+.env
+venv_blog

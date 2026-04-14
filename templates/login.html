@@ -1,49 +1,266 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <title>Note taking app</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecNotes — Login</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
     <style>
-	.login{
-		position:absolute;
-		top:20%;
-		left:50%;
-		transform:translate(-50%,-50%);
+        /* Override admin.css body flex direction — login is a centered single-card page */
+        body {
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
 
-		display: flex;
-            flex-direction: column; /* Stacks the H2 and Form vertically */
-            align-items: center;    /* Centers items inside the div */
-            text-align: center;
-            padding: 20px;
-            border: 1px solid #ddd;
+        /* Subtle background grid pattern matching admin's dark aesthetic */
+        .login-bg {
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.12) 0%, transparent 65%),
+                var(--bg);
+            z-index: 0;
+        }
+
+        .login-wrap {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            width: 100%;
+            padding: 1rem;
+        }
+
+        /* Brand lockup above the card — matches sidebar-brand aesthetic */
+        .login-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .login-brand-icon {
+            width: 34px;
+            height: 34px;
+            background: var(--accent);
             border-radius: 8px;
-            background: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);			
-	}
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .login-brand-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: #fff;
+        }
+        .login-brand-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.01em;
+        }
 
-        body { 
-		margin:0;
-		display:flex;
-		font-family: sans-serif;
-		justify-content: center;
-		align-items: center;
-		margin: 40px;
-		line-height: 1.6; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; }
-        input[type="password"] { padding: 8px; width: 250px; }
-        button { padding: 8px 15px; cursor: pointer; background: #007bff; color: white; border: none; }
+        /* Main card — mirrors .stat-card / .panel pattern */
+        .login-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem 2rem 1.75rem;
+            width: 100%;
+            max-width: 360px;
+            box-shadow:
+                0 0 0 1px rgba(99,102,241,0.05),
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 2px 8px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Card heading section */
+        .login-card-header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        .login-card-title {
+            font-size: 0.97rem;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.005em;
+        }
+        .login-card-sub {
+            font-size: 0.8rem;
+            color: var(--subtext);
+        }
+
+        /* Divider matching border style */
+        .login-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0 -2rem;
+        }
+
+        /* Error banner — matches the panel error pattern */
+        .error-banner {
+            display: none;
+            background: var(--error-bg);
+            color: var(--error-color);
+            border: 1px solid rgba(248,113,113,0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.83rem;
+            line-height: 1.4;
+        }
+
+        /* Form field — mirrors .form-field / .form-label from admin */
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .form-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--subtext);
+        }
+        .form-input {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 0.93rem;
+            font-family: inherit;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .form-input::placeholder {
+            color: var(--placeholder);
+        }
+        .form-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        /* Submit button — identical to .submit-btn / .new-note-btn in admin */
+        .btn-login {
+            width: 100%;
+            background: var(--accent);
+            color: var(--btn-text);
+            border: none;
+            border-radius: 7px;
+            padding: 10px 14px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s;
+            letter-spacing: 0.01em;
+        }
+        .btn-login:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+        .btn-login:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        /* Footer hint text */
+        .login-footer-hint {
+            font-size: 0.75rem;
+            color: var(--subtext);
+            text-align: center;
+            opacity: 0.7;
+        }
     </style>
 </head>
 <body>
-	<div class="login">
-    		<h2>What's the password?!?.....</h2>
-    			<form action="/api/auth" method="POST">
-        			<div class="form-group">
-            			<input id="password" type="password" name="password" placeholder="Enter the password" required> 
-        			<button type="submit">Submit</button>
-    			</form>
-	</div>
+    <div class="login-bg" aria-hidden="true"></div>
 
+    <div class="login-wrap">
+
+        <!-- Brand lockup — mirrors the sidebar brand -->
+        <div class="login-brand">
+            <div class="login-brand-icon">
+                <!-- Same grid icon as sidebar -->
+                <svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zm0 11h7v7H3zm11-11h7v7h-7zm0 11h7v7h-7z"/></svg>
+            </div>
+            <span class="login-brand-name">SecNotes</span>
+        </div>
+
+        <!-- Login card -->
+        <div class="login-card">
+
+            <div class="login-card-header">
+                <div class="login-card-title">Authentication required</div>
+                <div class="login-card-sub">Enter your password to access the dashboard</div>
+            </div>
+
+            <div class="login-divider"></div>
+
+            <div class="error-banner" id="error-banner" role="alert"></div>
+
+            <div class="form-field">
+                <label class="form-label" for="password">Password</label>
+                <input class="form-input" type="password" id="password" placeholder="••••••••" autofocus autocomplete="current-password">
+            </div>
+
+            <button class="btn-login" id="submit-btn" onclick="doLogin()">Authenticate</button>
+
+            <div class="login-footer-hint">SecNotes &mdash; Personal security workspace</div>
+
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("password").addEventListener("keydown", function(e) {
+            if (e.key === "Enter") doLogin();
+        });
+
+        async function doLogin() {
+            const btn      = document.getElementById("submit-btn");
+            const banner   = document.getElementById("error-banner");
+            const password = document.getElementById("password").value;
+
+            btn.disabled = true;
+            btn.textContent = "Authenticating...";
+            banner.style.display = "none";
+
+            try {
+                const res = await fetch("/api/auth", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ password })
+                });
+
+                if (res.ok) {
+                    window.location.href = "/admin";
+                    return;
+                }
+
+                const msg = res.status === 429
+                    ? "Too many attempts. Try again later."
+                    : "Invalid password.";
+
+                // Use textContent — never innerHTML with user-controlled data
+                banner.textContent = msg;
+                banner.style.display = "block";
+                document.getElementById("password").value = "";
+                document.getElementById("password").focus();
+            } catch {
+                banner.textContent = "Network error. Try again.";
+                banner.style.display = "block";
+            }
+
+            btn.disabled = false;
+            btn.textContent = "Authenticate";
+        }
+    </script>
 </body>
 </html>

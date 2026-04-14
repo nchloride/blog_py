@@ -14,6 +14,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "80:80"
-    environment: 
+    environment:
       - user=admin
       - pass=pass123
+      - SECRET_KEY
+      - APP_PASSWORD_HASH

@@ -3,3 +3,5 @@ pymongo
 beautifulsoup4
 feedparser
 requests
+argon2-cffi
+flask-limiter
