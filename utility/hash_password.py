@@ -10,12 +10,14 @@ from argon2 import PasswordHasher
 
 ph = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=2)
 
-password = getpass.getpass("Enter your desired login password: ")
-confirm  = getpass.getpass("Confirm: ")
-
-if password != confirm:
-    print("Passwords do not match. Aborting.")
-    exit(1)
+while True:
+    password = getpass.getpass("Enter your desired login password: ")
+    confirm  = getpass.getpass("Confirm: ")
+    
+    if password != confirm:
+        print("Passwords do not match. Aborting.")
+    else:
+        break
 
 hashed     = ph.hash(password)
 secret_key = base64.b64encode(secrets.token_bytes(32)).decode()

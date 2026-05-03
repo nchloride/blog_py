@@ -11,6 +11,7 @@ fi
 
 sed -e "s/ip = \"<ip_add>\"/ip = \"${ip}\"/g" main.py > main2.py
 
+# comment
 
 export user=admin
 export pass=pass123
